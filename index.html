@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CDMX Oasis - 墨西哥城游玩探索地图</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="为您精选墨西哥城最适合躺平发呆的避世角落，最具有代表性的人文景观，以及极具特色的精品咖啡店，配备交互式地图，支持一键导航。">
+    <meta name="keywords" content="墨西哥城旅游, CDMX发呆地方, 墨西哥城咖啡店, 墨西哥城特色咖啡, 人类学博物馆, 弗里达故居, 墨西哥城地图">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet Map CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <!-- Modern Web Guidance Color Scheme Pre-load -->
+    <meta name="color-scheme" content="light dark">
+    <script>
+        {
+            const colorScheme = localStorage.getItem("color-scheme");
+            if (colorScheme) {
+                document.querySelector('meta[name="color-scheme"]').content = colorScheme;
+                document.documentElement.setAttribute('data-theme', colorScheme);
+            } else {
+                // Default to system preference
+                const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+                document.documentElement.setAttribute('data-theme', systemDark ? 'dark' : 'light');
+            }
+        }
+    </script>
+    
+    <style>
+        :root {
+            /* Palette variables */
+            --bg-light: #f4f6f0;
+            --bg-dark: #12140e;
+            --sidebar-bg-light: rgba(255, 255, 255, 0.85);
+            --sidebar-bg-dark: rgba(18, 20, 14, 0.85);
+            
+            --text-light: #2d3822;
+            --text-dark: #ecf3e5;
+            
+            --primary: #4f6f52;
+            --primary-light: #739072;
+            --primary-dark: #3a4d39;
+            --accent: #d2e0fb;
+            --accent-dark: #86a7fc;
+            
+            --card-bg-light: rgba(255, 255, 255, 0.9);
+            --card-bg-dark: rgba(30, 35, 25, 0.9);
+            --border-light: rgba(79, 111, 82, 0.15);
+            --border-dark: rgba(236, 243, 229, 0.15);
+            
+            /* Dynamic bindings */
+            --bg: var(--bg-light);
+            --sidebar-bg: var(--sidebar-bg-light);
+            --text: var(--text-light);
+            --card-bg: var(--card-bg-light);
+            --border-color: var(--border-light);
+            --shadow: 0 8px 32px 0 rgba(79, 111, 82, 0.1);
+            
+            --font-family: 'Montserrat', 'Noto Sans SC', sans-serif;
+            --transition-speed: 0.3s;
+        }
+        
+        [data-theme="dark"] {
+            --bg: var(--bg-dark);
+            --sidebar-bg: var(--sidebar-bg-dark);
+            --text: var(--text-dark);
+            --card-bg: var(--card-bg-dark);
+            --border-color: var(--border-dark);
+            --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            transition: background-color var(--transition-speed), color var(--transition-speed);
+        }
+        
+        /* App Layout */
+        #app-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        /* Sidebar */
+        #sidebar {
+            width: 420px;
+            height: 100%;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-right: 1px solid var(--border-color);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow);
+            transition: width var(--transition-speed), background-color var(--transition-speed), border-color var(--transition-speed);
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        
+        .sidebar-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        [data-theme="dark"] h1 {
+            color: var(--accent-dark);
+        }
+        
+        .theme-toggle {
+            background: none;
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            border-radius: 50%;
+            cursor: pointer;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            transition: all var(--transition-speed);
+        }
+        
+        .theme-toggle:hover {
+            background: var(--border-color);
+            transform: scale(1.05);
+        }
+        
+        .subtitle {
+            font-size: 13px;
+            line-height: 1.5;
+            opacity: 0.8;
+        }
+        
+        /* Search & Filter */
+        .controls {
+            padding: 16px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .search-box {
+            position: relative;
+            width: 100%;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 10px 16px;
+            padding-right: 40px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text);
+            font-family: var(--font-family);
+            font-size: 14px;
+            outline: none;
+            transition: all var(--transition-speed);
+        }
+        
+        .search-box input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(79, 111, 82, 0.2);
+        }
+        
+        .search-icon {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        .filter-tabs {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            scrollbar-width: none; /* Firefox */
+        }
+        
+        .filter-tabs::-webkit-scrollbar {
+            display: none; /* Safari/Chrome */
+        }
+        
+        .filter-tab {
+            padding: 6px 12px;
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all var(--transition-speed);
+        }
+        
+        .filter-tab.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        [data-theme="dark"] .filter-tab.active {
+            background: var(--accent-dark);
+            color: #12140e;
+            border-color: var(--accent-dark);
+        }
+        
+        .filter-tab:hover:not(.active) {
+            background: rgba(79, 111, 82, 0.1);
+        }
+        
+        /* Places List */
+        .places-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 16px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            /* Scrollbar styles */
+            scrollbar-color: var(--primary) transparent;
+            scrollbar-width: thin;
+        }
+        
+        @supports not (scrollbar-color: auto) {
+            .places-list::-webkit-scrollbar {
+                width: 6px;
+            }
+            .places-list::-webkit-scrollbar-thumb {
+                background: var(--primary);
+                border-radius: 3px;
+            }
+        }
+        
+        .place-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 18px;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex-shrink: 0; /* CRITICAL FIX: Prevent flexbox from squishing cards vertically */
+        }
+        
+        .place-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            border-color: var(--primary);
+        }
+        
+        [data-theme="dark"] .place-card:hover {
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            border-color: var(--accent-dark);
+        }
+        
+        .place-card.selected {
+            border-color: var(--primary);
+            background: rgba(79, 111, 82, 0.05);
+            box-shadow: 0 4px 15px rgba(79, 111, 82, 0.1);
+        }
+        
+        [data-theme="dark"] .place-card.selected {
+            border-color: var(--accent-dark);
+            background: rgba(134, 167, 252, 0.05);
+            box-shadow: 0 4px 15px rgba(134, 167, 252, 0.1);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        
+        .place-title {
+            font-size: 16px;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+        
+        .place-es {
+            font-size: 12px;
+            opacity: 0.6;
+            margin-top: 2px;
+            word-break: break-word; /* Ensure wrapping of long names */
+        }
+        
+        .tag {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 10px;
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
+        
+        .tag-quiet {
+            background-color: rgba(108, 95, 252, 0.15);
+            color: #5849d8;
+        }
+        [data-theme="dark"] .tag-quiet {
+            background-color: rgba(108, 95, 252, 0.25);
+            color: #a39cfd;
+        }
+        
+        .tag-lawn {
+            background-color: rgba(79, 111, 82, 0.15);
+            color: var(--primary-dark);
+        }
+        [data-theme="dark"] .tag-lawn {
+            background-color: rgba(115, 144, 114, 0.25);
+            color: #a3c9a1;
+        }
+        
+        .tag-forest {
+            background-color: rgba(195, 129, 84, 0.15);
+            color: #9d532b;
+        }
+        [data-theme="dark"] .tag-forest {
+            background-color: rgba(195, 129, 84, 0.25);
+            color: #f7a576;
+        }
+
+        .tag-culture {
+            background-color: rgba(230, 92, 92, 0.15);
+            color: #c93b3b;
+        }
+        [data-theme="dark"] .tag-culture {
+            background-color: rgba(230, 92, 92, 0.25);
+            color: #ff8e8e;
+        }
+
+        .tag-cafe {
+            background-color: rgba(139, 90, 43, 0.15);
+            color: #8b5a2b;
+        }
+        [data-theme="dark"] .tag-cafe {
+            background-color: rgba(210, 180, 140, 0.25);
+            color: #d2b48c;
+        }
+        
+        .place-desc {
+            font-size: 13px;
+            line-height: 1.5;
+            opacity: 0.85;
+        }
+        
+        .place-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .meta-icon {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            color: var(--primary);
+        }
+        [data-theme="dark"] .meta-icon {
+            color: var(--accent-dark);
+        }
+        
+        /* Direct link buttons styling */
+        .gmaps-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background: var(--primary);
+            color: white !important; /* Force white text over dark background */
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none !important;
+            transition: background var(--transition-speed), transform 0.1s;
+            margin-top: 6px;
+            align-self: flex-start;
+        }
+        
+        .gmaps-btn:hover {
+            background: var(--primary-dark);
+            transform: scale(1.02);
+            color: white !important;
+        }
+        
+        [data-theme="dark"] .gmaps-btn {
+            background: var(--accent-dark);
+            color: #12140e !important; /* Force dark text over light blue button */
+        }
+        
+        [data-theme="dark"] .gmaps-btn:hover {
+            background: #cbd9ff;
+            color: #12140e !important;
+        }
+        
+        /* Map Container */
+        #map {
+            flex-grow: 1;
+            height: 100%;
+            position: relative;
+        }
+        
+        /* Custom Leaflet Styling */
+        .leaflet-popup-content-wrapper {
+            background: var(--card-bg);
+            color: var(--text);
+            border-radius: 12px;
+            font-family: var(--font-family);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+        
+        /* OVERRIDE Leaflet's default blue link color in popups */
+        .leaflet-popup-content-wrapper a.gmaps-btn {
+            color: white !important;
+            text-decoration: none !important;
+        }
+
+        [data-theme="dark"] .leaflet-popup-content-wrapper a.gmaps-btn {
+            color: #12140e !important;
+            text-decoration: none !important;
+        }
+        
+        .leaflet-popup-tip {
+            background: var(--card-bg);
+            border-left: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .popup-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 6px;
+            max-width: 240px;
+        }
+        
+        .popup-title {
+            font-weight: 700;
+            font-size: 14px;
+        }
+        
+        .popup-es {
+            font-size: 11px;
+            opacity: 0.6;
+            margin-top: -4px;
+        }
+        
+        .popup-desc {
+            font-size: 12px;
+            line-height: 1.4;
+            opacity: 0.85;
+        }
+        
+        .popup-btn {
+            margin-top: 4px;
+            padding: 6px 10px;
+            font-size: 11px;
+            border-radius: 6px;
+        }
+        
+        /* Custom Marker Animation */
+        .custom-pin {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+            border: 2px solid white;
+            transition: transform 0.2s;
+        }
+        
+        .custom-pin.selected {
+            transform: scale(1.3);
+            border-color: #ffd700 !important;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+            animation: pulse-pin 1.5s infinite alternate;
+        }
+        
+        @keyframes pulse-pin {
+            0% { transform: scale(1.25); }
+            100% { transform: scale(1.4); }
+        }
+        
+        /* Mobile Overlay Menu Button */
+        #mobile-toggle {
+            display: none;
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            z-index: 1100;
+            background: var(--card-bg);
+            color: var(--text);
+            border: 1px solid var(--border-color);
+            padding: 10px 14px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 13px;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            #sidebar {
+                position: absolute;
+                left: 0;
+                top: 0;
+                height: 100%;
+                width: 320px;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            #sidebar.open {
+                transform: translateX(0);
+            }
+            
+            #mobile-toggle {
+                display: flex;
+            }
+            
+            .leaflet-left {
+                margin-left: 0;
+            }
+            .leaflet-control-zoom {
+                margin-top: 60px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <button id="mobile-toggle" onclick="toggleSidebar()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        <span>查看景点列表</span>
+    </button>
+
+    <div id="app-container">
+        <!-- Sidebar -->
+        <aside id="sidebar" aria-label="景点列表">
+            <div class="sidebar-header">
+                <div class="header-top">
+                    <h1>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                        CDMX Oasis
+                    </h1>
+                    <button class="theme-toggle" onclick="toggleTheme()" aria-label="切换明暗主题" id="theme-btn">
+                        <!-- Sun/Moon icons will be toggled by JS -->
+                        <svg id="theme-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+                    </button>
+                </div>
+                <div class="subtitle">墨西哥城游玩探索地图 - 汇集了最清幽放空的发呆角落、最具底蕴的人文景观以及必去特色咖啡馆。</div>
+            </div>
+            
+            <!-- Controls -->
+            <div class="controls">
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="搜索去处..." oninput="handleSearch(this.value)">
+                    <span class="search-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    </span>
+                </div>
+                
+                <div class="filter-tabs">
+                    <button class="filter-tab active" onclick="filterCategory('all', this)" id="tab-all">全部</button>
+                    <button class="filter-tab" onclick="filterCategory('quiet', this)">🎵 听音</button>
+                    <button class="filter-tab" onclick="filterCategory('lawn', this)">🧺 草地</button>
+                    <button class="filter-tab" onclick="filterCategory('forest', this)">🌲 森林</button>
+                    <button class="filter-tab" onclick="filterCategory('culture', this)">🏛️ 人文</button>
+                    <button class="filter-tab" onclick="filterCategory('cafe', this)">☕ 咖啡</button>
+                </div>
+            </div>
+            
+            <!-- List -->
+            <div class="places-list" id="places-list">
+                <!-- Rendered dynamically by JS -->
+            </div>
+        </aside>
+        
+        <!-- Interactive Map -->
+        <main id="map" aria-label="交互式地图"></main>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <script>
+        // Data Array
+        const places = [
+            {
+                id: 1,
+                nameZh: "查普尔特佩克听音室",
+                nameEs: "Audiorama (Bosque de Chapultepec)",
+                lat: 19.41935,
+                lng: -99.18118,
+                category: "quiet",
+                categoryZh: "听音静谧",
+                description: "隐藏在查普尔特佩克森林第一区的“听音室”，播放柔和音乐，设有禁言规定，极其适合看书、冥想与放空。",
+                hours: "周二至周日 09:00 - 16:00 (周一关闭)",
+                tips: "禁止携带食物、饮料和宠物，保持绝对安静。建议带一本书。",
+                gmaps: "https://www.google.com/maps/search/?api=1&query=Audiorama+Bosque+de+Chapultepec"
+            },
+            {
+                id: 2,
+                nameZh: "国家声音档案馆声音花园",
+                nameEs: "Jardín Sonoro de la Fonoteca Nacional",
+                lat: 19.3485,
+                lng: -99.1633,
+                category: "quiet",
+                categoryZh: "听音静谧",
+                description: "位于科约阿坎区的古老庄园内，四周环绕着高大古树。花园内配有多声道高保真音响系统，定期播放自然声音、诗歌与古典乐。",
+                hours: "周一至周六 12:00 - 13:00, 17:00 - 18:00",
+                tips: "开放时间有限，出行前请确认。周围有很多好喝的咖啡馆。",
+                gmaps: "https://www.google.com/maps/search/?api=1&query=Fonoteca+Nacional+Coyoacan"
+            },
+            {
+                id: 3,
+                nameZh: "西班牙公园听音室",
+                nameEs: "Audiorama de Parque España",
+                lat: 19.4150,
+                lng: -99.1712,
+                category: "quiet",
+                categoryZh: "听音静谧",
+                description: "位于康德萨区的西班牙公园角落。绿植环绕，专为静心和阅读设计，是繁华街区中的一片宁静港湾。",
+                hours: "每日开放 (建议白天造访)",
+                tips: "适合在康德萨区闲逛累了时，顺便进去歇脚、闭目养神。",
+                gmaps: "https://www.google.com/maps/search/?api=1&query=Audiorama+Parque+Espana"
+            },
+            {
+                id: 4,
+                nameZh: "墨西哥人公园",
+                nameEs: "Parque La Mexicana",
+                lat: 19.3575,
+                lng: -99.2704,
+                category: "lawn",
+                categoryZh: "绿地野餐",
+                description: "圣达菲的现代公园。拥有精心修剪的大片平整草地。躺在草坪上可以仰望宏伟的摩天大楼，干净整洁且十分安全。",
+                hours: "每日 05:00 - 22:00",
+                tips: "可以带一块大野餐垫。公园里有很多高档餐厅和咖啡馆。",
+                gmaps: "https://www.google.com/maps/search/?api=1&query=Parque+La+Mexicana+Santa+Fe"
+            },
+            {
+                id: 5,
+                nameZh: "双百年纪念公园",
+                nameEs: "Parque Bicentenario",
+                lat: 19.4628,
+                lng: -99.1995,
+                category: "lawn",
+                categoryZh: "绿地野餐",
+                description: "面积庞大的生态公园。有极其开阔的草坪区域、人工湖以及温室，非常适合逃离市区喧嚣，平躺晒太阳和野餐。",
+                hours: "周二至周日 07:00 - 18:00 (周一关闭)",
+                tips: "禁止携带宠物入内。空间非常开阔，适合带上防晒霜和充足的水。",
+                gmaps: "https://www.google.com/maps/search/?api=1&query=Parque+Bicentenario+CDMX"
+            },
+            {
+                id: 6,
+                nameZh: "墨大植物园",
+                nameEs: "Jardín Botánico de la UNAM",
+                lat: 19.3190,
+                lng: -99.1925,
+                category: "lawn",
+                categoryZh: "绿地野餐",
+                description: "国立自治大学（UNAM）内的植物园。生长在火山黑熔岩上的独特绿植景观，学术氛围浓厚，极其静谧和空旷。",
+                hours: "周一至周五 09:00 - 16:00",
+                tips: "严禁乱扔垃圾或带宠物入内。地处生态保护区，非常自然野生。",
+                gmaps: "https://www.google.com/maps/search/?api=1&query=Jardin+Botanico+UNAM"
+            },
+            {
+                id: 7,
+                nameZh: "狮子沙漠修道院森林",
+                nameEs: "Ex Convento del Desierto de los Leones",
+                lat: 19.31342,
+                lng: -99.31047,
+                category: "forest",
+                categoryZh: "森林吸氧",
+                description: "海拔较高的寒带松树森林公园。中心是一座17世纪的古老修道院遗址，周围森林密布，云雾缭绕，充满野性之美。",
+                hours: "周二至周日 09:00 - 17:00 (周一关闭)",
+                tips: "山里气候较冷潮湿，必须携带外套。适合长途徒步与完全避世。",
+                gmaps: "https://www.google.com/maps/search/?api=1&query=Ex+Convento+Desierto+de+los+Leones"
+            },
+            {
+                id: 8,
+                nameZh: "特拉尔潘森林",
+                nameEs: "Bosque de Tlalpan",
+                lat: 19.29333,
+                lng: -99.19611,
+                category: "forest",
+                categoryZh: "森林吸氧",
+                description: "位于墨城南部的天然生态保护林，拥有数百年古树。这里充满了大自然的原始气息，是本地人爬山、慢跑、冥想放空的秘密基地。",
+                hours: "每日 05:00 - 16:30",
+                tips: "下午关闭较早。适合喜欢原生森林、想摆脱人工公园雕琢痕迹的朋友。",
+                gmaps: "https://www.google.com/maps/search/?api=1&query=Bosque+de+Tlalpan"
+            },
+            {
+                id: 9,
+                nameZh: "国立人类学博物馆",
+                nameEs: "Museo Nacional de Antropología",
+                lat: 19.4261,
+                lng: -99.1861,
+                category: "culture",
+                categoryZh: "人文景观",
+                description: "世界上最伟大的考古学博物馆之一，收藏有著名的阿兹特克太阳历石等无数美洲古代文明珍宝，极其震撼。",
+                hours: "周二至周日 09:00 - 18:00 (周一闭馆)",
+                tips: "馆藏极其庞大，建议租用语音导览，并预留至少半天到一天的时间游览。",
+                gmaps: "https://www.google.com/maps/search/?api=1&query=Museo+Nacional+de+Antropologia+CDMX"
+            },
+            {
+                id: 10,
+                nameZh: "艺术宫",
+                nameEs: "Palacio de Bellas Artes",
+                lat: 19.4352,
+                lng: -99.1413,
+                category: "culture",
+                categoryZh: "人文景观",
+                description: "墨西哥城地标建筑，外表呈白色大理石新艺术风格，内部是精美的Art Deco装饰，墙壁绘有里维拉等大师的巨幅国宝级壁画。",
+                hours: "周二至周日 10:00 - 18:00 (周一闭馆)",
+                tips: "对面Sears百货大楼八楼的咖啡馆是拍摄艺术宫经典全景的绝佳机位。",
+                gmaps: "https://www.google.com/maps/search/?api=1&query=Palacio+de+Bellas+Artes"
+            },
+            {
+                id: 11,
+                nameZh: "弗里达·卡罗博物馆 (蓝房子)",
+                nameEs: "Museo Frida Kahlo (La Casa Azul)",
+                lat: 19.3494,
+                lng: -99.1620,
+                category: "culture",
+                categoryZh: "人文景观",
+                description: "传奇女画家弗里达的故居，整座房子漆成深邃的钴蓝色，完整保留了她当年生活、创作的寝室、画室与个人服饰。",
+                hours: "周二至周日 10:00 - 18:00 (周一闭馆，周三11:00开放)",
+                tips: "必须提前在官网预约购票，现场不售当日票。建议提前2-3周抢票。",
+                gmaps: "https://www.google.com/maps/search/?api=1&query=Museo+Frida+Kahlo"
+            },
+            {
+                id: 12,
+                nameZh: "大神庙遗址及博物馆",
+                nameEs: "Museo del Templo Mayor",
+                lat: 19.4349,
+                lng: -99.1303,
+                category: "culture",
+                categoryZh: "人文景观",
+                description: "昔日阿兹特克帝国首都的核心神庙遗址。你可以在此亲眼目睹金字塔塔基遗迹，并参观出土的精美阿兹特克祭祀神器。",
+                hours: "周二至周日 09:00 - 17:00 (周一闭馆)",
+                tips: "位于宪法广场旁，建议与大教堂、国家宫安排在同一天游览。",
+                gmaps: "https://www.google.com/maps/search/?api=1&query=Museo+del+Templo+Mayor"
+            },
+            {
+                id: 13,
+                nameZh: "查普尔特佩克城堡",
+                nameEs: "Castillo de Chapultepec",
+                lat: 19.4204,
+                lng: -99.1818,
+                category: "culture",
+                categoryZh: "人文景观",
+                description: "美洲唯一一座建在山顶的皇家城堡，曾为西班牙总督及皇帝寝宫，现为国家历史博物馆，内部装潢精美，壁画恢弘。",
+                hours: "周二至周日 09:00 - 17:00 (周一闭馆)",
+                tips: "城堡位于山顶，需要走一小段上坡路。露台是俯瞰墨城林荫大道全景的绝佳位置。",
+                gmaps: "https://www.google.com/maps/search/?api=1&query=Castillo+de+Chapultepec"
+            },
+            {
+                id: 14,
+                nameZh: "三代文化广场",
+                nameEs: "Plaza de las Tres Culturas",
+                lat: 19.4517,
+                lng: -99.1362,
+                category: "culture",
+                categoryZh: "人文景观",
+                description: "神奇的建筑交汇点。在此你可以同时看到阿兹特克金字塔遗迹、西班牙殖民教堂和现代的高层公寓建筑，寓意极深。",
+                hours: "每日开放",
+                tips: "周边街区环境较复杂，建议白天结伴前往游览，并保管好随身财物。",
+                gmaps: "https://www.google.com/maps/search/?api=1&query=Plaza+de+las+Tres+Culturas+CDMX"
+            },
+            {
+                id: 15,
+                nameZh: "霍奇米尔科浮动花园",
+                nameEs: "Xochimilco",
+                lat: 19.2630,
+                lng: -99.1030,
+                category: "culture",
+                categoryZh: "人文景观",
+                description: "墨西哥水上威尼斯。运河中穿梭着色彩斑斓的木船（Trajineras），伴随着水上玛丽亚奇乐队的现场演奏，热闹非凡。",
+                hours: "每日 09:00 - 19:00",
+                tips: "按船包时收费。官方制定了统一定价（约800比索/小时/船），上船前务必跟船夫确认好价格，谨防宰客。",
+                gmaps: "https://www.google.com/maps/search/?api=1&query=Xochimilco+CDMX"
+            },
+            {
+                id: 16,
+                nameZh: "路易斯·巴拉甘故居",
+                nameEs: "Casa Luis Barragán",
+                lat: 19.4114,
+                lng: -99.1918,
+                category: "culture",
+                categoryZh: "人文景观",
+                description: "世界文化遗产。普利兹克奖得主巴拉甘的杰作，他用亮粉、亮黄等纯色墙面结合精妙的自然光影，创造出充满禅意的现代空间。",
+                hours: "周一至周五 10:00 - 17:00, 周末 10:00 - 13:00 (需提前预约)",
+                tips: "必须提前在官网预约限流英文/西文导览，内部拍照需要额外付摄影费。",
+                gmaps: "https://www.google.com/maps/search/?api=1&query=Casa+Luis+Barragan"
+            },
+            {
+                id: 17,
+                nameZh: "瓜达卢佩圣母圣殿",
+                nameEs: "Basílica de Santa María de Guadalupe",
+                lat: 19.4844,
+                lng: -99.1172,
+                category: "culture",
+                categoryZh: "人文景观",
+                description: "美洲到访人数最多的天主教朝圣地。倾斜的殖民时期旧大教堂与现代的圆形新大教堂在此并存，供奉着显灵的圣母衣。",
+                hours: "每日 06:00 - 21:00",
+                tips: "免费进入。参观新教堂时可在圣母像下的自动扶梯上缓缓滑过欣赏圣衣。",
+                gmaps: "https://www.google.com/maps/search/?api=1&query=Basilica+de+Santa+Maria+de+Guadalupe"
+            },
+            {
+                id: 18,
+                nameZh: "Café Tormenta (黑胶先锋咖啡站)",
+                nameEs: "Café Tormenta",
+                lat: 19.4227,
+                lng: -99.1583,
+                category: "cafe",
+                categoryZh: "特色咖啡",
+                description: "街头铁皮屋式的精品咖啡站，由先锋大厨打造。配有黑胶唱机播放动听唱片，风味卓越，充满墨城潮流街头气息。",
+                hours: "周三至周一 08:00 - 18:00 (周二公休)",
+                tips: "只有几张街边塑料凳和立饮台，纯粹的街头立饮体验，非常酷。",
+                gmaps: "https://www.google.com/maps/search/?api=1&query=Cafe+Tormenta+CDMX"
+            },
+            {
+                id: 19,
+                nameZh: "Órbita (黑胶听音咖啡Bar)",
+                nameEs: "Órbita",
+                lat: 19.4190,
+                lng: -99.1610,
+                category: "cafe",
+                categoryZh: "特色咖啡",
+                description: "白天是惬意的精品咖啡与早午餐店，晚上化身为音乐爱好者心水的黑胶音乐酒吧。备有发烧级高保真Hi-Fi音响系统。",
+                hours: "周三至周一 09:00 - 02:00 (周二公休)",
+                tips: "极度推荐午后或晚上造访，坐在充满设计感的室内听着黑胶音乐发呆是一流享受。",
+                gmaps: "https://www.google.com/maps/search/?api=1&query=Orbita+Roma+Norte"
+            },
+            {
+                id: 20,
+                nameZh: "Blend Station (设计感绿植咖啡店)",
+                nameEs: "Blend Station (Condesa)",
+                lat: 19.4124,
+                lng: -99.1725,
+                category: "cafe",
+                categoryZh: "特色咖啡",
+                description: "康德萨区极具人气的概念咖啡店。拥有通透的高穹顶、室内真树、标志性的大眼外星人墙绘，提供自家烘焙的一流豆子。",
+                hours: "每日 08:00 - 20:00",
+                tips: "设计感爆棚，非常适合拍照出片、看书或带电脑工作。手冲风味极佳。",
+                gmaps: "https://www.google.com/maps/search/?api=1&query=Blend+Station+Tamaulipas"
+            },
+            {
+                id: 21,
+                nameZh: "Rosetta 面包工坊 (意境庄园咖啡)",
+                nameEs: "Panadería Rosetta",
+                lat: 19.4199,
+                lng: -99.1605,
+                category: "cafe",
+                categoryZh: "特色咖啡",
+                description: "虽然以全城第一的“番石榴卷 (Rol de Guayaba)”闻名，但其绿植环绕的古典庄园中庭与品质优良的手冲咖啡同样让人惊艳。",
+                hours: "每日 07:00 - 22:00",
+                tips: "排队非常火爆，建议早上08:00前去，在静谧的绿植中庭里喝咖啡吃面包发呆。",
+                gmaps: "https://www.google.com/maps/search/?api=1&query=Panaderia+Rosetta+Colima"
+            },
+            {
+                id: 22,
+                nameZh: "Raku Café (日式极简精品咖啡)",
+                nameEs: "Raku Café",
+                lat: 19.4187,
+                lng: -99.1675,
+                category: "cafe",
+                categoryZh: "特色咖啡",
+                description: "融入日式美学的超极简主义精品咖啡店。面积精细，专注于高品质的单一产区咖啡豆手冲及浓缩咖啡，极显匠人精神。",
+                hours: "每日 08:00 - 16:00",
+                tips: "店铺极小只有两三个座位，适合安安静静地品味咖啡纯粹风味的人。",
+                gmaps: "https://www.google.com/maps/search/?api=1&query=Raku+Cafe+Sinaloa"
+            },
+            {
+                id: 23,
+                nameZh: "Almanegra Café (极简黑色精品先驱)",
+                nameEs: "Almanegra Café (Narvarte)",
+                lat: 19.3946,
+                lng: -99.1524,
+                category: "cafe",
+                categoryZh: "特色咖啡",
+                description: "墨城精品咖啡热潮的探路者，主打全黑极简工业风。对待咖啡如同化学实验般精细，冷萃（Cold Brew）和气泡冷萃惊艳。",
+                hours: "每日 08:00 - 21:00",
+                tips: "此店避开了嘈杂的游客区，位于安静的Narvarte生活街区，适合体验地道的墨城精品咖啡生活。",
+                gmaps: "https://www.google.com/maps/search/?api=1&query=Almanegra+Cafe+Narvarte"
+            }
+        ];
+
+        let map;
+        let activeMarkers = {};
+        let currentFilter = 'all';
+        let searchQuery = '';
+        let lightTileLayer, darkTileLayer;
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            initMap();
+            initThemeIcon();
+            renderPlaces();
+            
+            // Listen for system theme changes dynamically
+            window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
+                if (!localStorage.getItem("color-scheme")) {
+                    const newTheme = e.matches ? 'dark' : 'light';
+                    setTheme(newTheme);
+                }
+            });
+        });
+
+        function initMap() {
+            // Center map on Mexico City
+            map = L.map('map', {
+                zoomControl: true,
+                attributionControl: true
+            }).setView([19.3880, -99.1700], 11);
+
+            // Set up Map layers
+            lightTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://carto.com/">CARTO</a>'
+            });
+
+            darkTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://carto.com/">CARTO</a>'
+            });
+
+            // Set initial layer based on theme
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            if (currentTheme === 'dark') {
+                darkTileLayer.addTo(map);
+            } else {
+                lightTileLayer.addTo(map);
+            }
+
+            // Move zoom controls to top-right
+            map.zoomControl.setPosition('topright');
+        }
+
+        // Color coding for Marker categories
+        function getCategoryColor(cat) {
+            switch(cat) {
+                case 'quiet': return '#5849d8';
+                case 'lawn': return '#4f6f52';
+                case 'forest': return '#9d532b';
+                case 'culture': return '#c93b3b';
+                case 'cafe': return '#8b5a2b';
+                default: return '#739072';
+            }
+        }
+
+        function createMarkers() {
+            // Clear existing markers
+            Object.values(activeMarkers).forEach(m => map.removeLayer(m));
+            activeMarkers = {};
+
+            // Filter places based on search and tab selection
+            const filtered = places.filter(p => {
+                const matchesTab = currentFilter === 'all' || p.category === currentFilter;
+                const matchesSearch = p.nameZh.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                      p.nameEs.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                      p.description.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchesTab && matchesSearch;
+            });
+
+            // Add markers
+            filtered.forEach(p => {
+                const color = getCategoryColor(p.category);
+                let emoji = '📍';
+                if (p.category === 'quiet') emoji = '🎵';
+                else if (p.category === 'lawn') emoji = '🧺';
+                else if (p.category === 'forest') emoji = '🌲';
+                else if (p.category === 'culture') emoji = '🏛️';
+                else if (p.category === 'cafe') emoji = '☕';
+
+                // Beautiful Custom SVG Icon Marker
+                const customIcon = L.divIcon({
+                    className: 'custom-div-icon',
+                    html: `<div class="custom-pin" id="pin-${p.id}" style="background-color: ${color}; border-color: white;">
+                             <span style="font-size: 14px;">${emoji}</span>
+                           </div>`,
+                    iconSize: [36, 36],
+                    iconAnchor: [18, 18],
+                    popupAnchor: [0, -18]
+                });
+
+                const popupHtml = `
+                    <div class="popup-container">
+                        <div class="popup-title">${p.nameZh}</div>
+                        <div class="popup-es">${p.nameEs}</div>
+                        <div class="popup-desc">${p.description}</div>
+                        <a href="${p.gmaps}" target="_blank" class="gmaps-btn popup-btn" id="popup-gmaps-${p.id}">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                            在 Google Maps 查看
+                        </a>
+                    </div>
+                `;
+
+                const marker = L.marker([p.lat, p.lng], { icon: customIcon })
+                    .bindPopup(popupHtml)
+                    .addTo(map);
+
+                marker.on('popupopen', () => {
+                    selectPlaceCard(p.id, false);
+                });
+
+                marker.on('popupclose', () => {
+                    deselectPlaceCards();
+                });
+
+                activeMarkers[p.id] = marker;
+            });
+        }
+
+        // Render Cards in Sidebar
+        function renderPlaces() {
+            const container = document.getElementById('places-list');
+            container.innerHTML = '';
+
+            const filtered = places.filter(p => {
+                const matchesTab = currentFilter === 'all' || p.category === currentFilter;
+                const matchesSearch = p.nameZh.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                      p.nameEs.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                      p.description.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchesTab && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; opacity: 0.6; font-size: 14px;">
+                        没有找到匹配的去处。
+                    </div>
+                `;
+                return;
+            }
+
+            filtered.forEach(p => {
+                const card = document.createElement('article');
+                card.className = `place-card`;
+                card.id = `card-${p.id}`;
+                card.onclick = () => selectPlaceCard(p.id, true);
+
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div>
+                            <h2 class="place-title">${p.nameZh}</h2>
+                            <div class="place-es">${p.nameEs}</div>
+                        </div>
+                        <span class="tag tag-${p.category}">${p.categoryZh}</span>
+                    </div>
+                    <p class="place-desc">${p.description}</p>
+                    
+                    <div class="place-meta-item">
+                        <span class="meta-icon" aria-hidden="true">🕒</span>
+                        <span>时间: ${p.hours}</span>
+                    </div>
+                    <div class="place-meta-item">
+                        <span class="meta-icon" aria-hidden="true">💡</span>
+                        <span>贴士: ${p.tips}</span>
+                    </div>
+                    
+                    <a href="${p.gmaps}" target="_blank" class="gmaps-btn" id="card-gmaps-${p.id}" onclick="event.stopPropagation();">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                        在 Google Maps 导航
+                    </a>
+                `;
+
+                container.appendChild(card);
+            });
+
+            // Re-create markers based on filtered list
+            createMarkers();
+        }
+
+        // Selection Handlers
+        function selectPlaceCard(id, panTo = true) {
+            deselectPlaceCards();
+
+            const card = document.getElementById(`card-${id}`);
+            if (card) {
+                card.classList.add('selected');
+                card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            // Highlight Marker
+            const pin = document.getElementById(`pin-${id}`);
+            if (pin) pin.classList.add('selected');
+
+            // Pan Map and Open Popup
+            const place = places.find(p => p.id === id);
+            const marker = activeMarkers[id];
+            
+            if (place && marker) {
+                if (panTo) {
+                    map.flyTo([place.lat, place.lng], 13, {
+                        duration: 1.2
+                    });
+                    setTimeout(() => {
+                        marker.openPopup();
+                    }, 1000);
+                }
+            }
+
+            // Close sidebar on mobile after clicking
+            if (window.innerWidth <= 768 && panTo) {
+                toggleSidebar(false);
+            }
+        }
+
+        function deselectPlaceCards() {
+            document.querySelectorAll('.place-card').forEach(c => c.classList.remove('selected'));
+            document.querySelectorAll('.custom-pin').forEach(p => p.classList.remove('selected'));
+        }
+
+        // Filters
+        function filterCategory(cat, btn) {
+            currentFilter = cat;
+            
+            // Toggle active class on tabs
+            document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            
+            renderPlaces();
+        }
+
+        function handleSearch(val) {
+            searchQuery = val;
+            renderPlaces();
+        }
+
+        // Theme Toggle Logic
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            
+            setTheme(newTheme);
+        }
+
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            document.querySelector('meta[name="color-scheme"]').content = theme;
+            localStorage.setItem("color-scheme", theme);
+            
+            // Switch Map Tile Layer
+            if (theme === 'dark') {
+                map.removeLayer(lightTileLayer);
+                darkTileLayer.addTo(map);
+            } else {
+                map.removeLayer(darkTileLayer);
+                lightTileLayer.addTo(map);
+            }
+            
+            updateThemeIcon(theme);
+        }
+
+        function initThemeIcon() {
+            const theme = document.documentElement.getAttribute('data-theme') || 'light';
+            updateThemeIcon(theme);
+        }
+
+        function updateThemeIcon(theme) {
+            const icon = document.getElementById('theme-icon');
+            if (theme === 'dark') {
+                // Moon svg content
+                icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+            } else {
+                // Sun svg content
+                icon.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+            }
+        }
+
+        // Mobile Sidebar Toggle
+        function toggleSidebar(forceState = null) {
+            const sidebar = document.getElementById('sidebar');
+            const btnText = document.querySelector('#mobile-toggle span');
+            
+            const isOpen = sidebar.classList.contains('open');
+            const nextState = forceState !== null ? forceState : !isOpen;
+
+            if (nextState) {
+                sidebar.classList.add('open');
+                btnText.textContent = '收起列表';
+            } else {
+                sidebar.classList.remove('open');
+                btnText.textContent = '查看列表';
+            }
+        }
+    </script>
+</body>
+</html>
